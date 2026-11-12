@@ -20,17 +20,18 @@
 
   // ---------- Banco ----------
   async function carregarEscolhas() {
-    const { data, error } = await banco.from("escolhas").select("personagem_id, jogador, segredo, pv, pd");
+    const { data, error } = await banco.from("escolhas").select("personagem_id, jogador, segredo, pv, pd, impeto");
     if (error) { console.error(error); return false; }
     escolhas = {};
     const novos = {};
     for (const linha of data) {
       escolhas[linha.personagem_id] = linha.jogador;
-      novos[linha.personagem_id] = { segredo: !!linha.segredo, pv: linha.pv, pd: linha.pd };
+      novos[linha.personagem_id] = { segredo: !!linha.segredo, pv: linha.pv, pd: linha.pd, impeto: linha.impeto };
       // enquanto o jogador está mexendo nos contadores, vale o valor local
       if (salvando && extras[linha.personagem_id]) {
         novos[linha.personagem_id].pv = extras[linha.personagem_id].pv;
         novos[linha.personagem_id].pd = extras[linha.personagem_id].pd;
+        novos[linha.personagem_id].impeto = extras[linha.personagem_id].impeto;
       }
       if (extras[linha.personagem_id] && extras[linha.personagem_id].segredo) novos[linha.personagem_id].segredo = true;
     }
@@ -58,7 +59,7 @@
       const e = extras[id] || {};
       const { error } = await banco.rpc("atualizar_ficha", {
         p_personagem: id, p_jogador: nomeJogador,
-        p_segredo: campos.segredo ?? null, p_pv: e.pv ?? null, p_pd: e.pd ?? null,
+        p_segredo: campos.segredo ?? null, p_pv: e.pv ?? null, p_pd: e.pd ?? null, p_impeto: e.impeto ?? null,
       });
       if (error) console.error(error);
       salvando = null;
@@ -247,7 +248,7 @@
   // ---------- Segredo: nome por 5 s -> botão -> fumaça -> ficha interativa ----------
   function camadaSecreta(p, info) {
     const { camada, localizar, s } = info;
-    camada.querySelectorAll(".zona-segredo, .botao-segredo, .contador").forEach((e) => e.remove());
+    camada.querySelectorAll(".zona-segredo, .botao-segredo, .contador, .impeto").forEach((e) => e.remove());
     const marcos = window.FICHAS[p.id].ficha.marcos;
     if (mestre || pagina !== "ficha" || meuId() !== p.id || !marcos) return;
     const ext = extras[p.id] || {};
@@ -295,7 +296,7 @@
         if (outro && Math.abs(outro.rotulo.v0 - m.rotulo.v0) < 10 && outro.rotulo.u0 > m.rotulo.u0) u1 = Math.min(u1, outro.rotulo.u0 - 6);
         const caixa = { u0: m.rotulo.u0 - 5, v0: m.valor.v0 - 8, u1, v1: m.valor.v1 + 8 };
         const r = localizar({ ...caixa, u1: m.rotulo.u1 });
-        const largura = (caixa.u1 - caixa.u0) * s, altura = (caixa.v1 - caixa.v0) * s;
+        const largura = (caixa.u1 - caixa.u0) * r.s, altura = (caixa.v1 - caixa.v0) * r.s;
         const atual = ext[chave] ?? m.max;
 
         const c = document.createElement("div");
@@ -322,6 +323,52 @@
         c.querySelector(".contador-menos").addEventListener("click", () => muda(-1));
         c.querySelector(".contador-mais").addEventListener("click", () => muda(+1));
         camada.append(c);
+      }
+
+      // barra de ímpeto: 5 espaços no mesmo desenho; − e + no lugar dos 2 segmentos escuros
+      const mi = marcos.impeto;
+      if (mi && mi.segmentos.length >= 5) {
+        const segs = mi.segmentos, ult = segs[segs.length - 1];
+        const caixa = { u0: segs[0].u0 - 1.6, v0: segs[0].v0 - 1.6, u1: ult.u1 + 1.6, v1: segs[0].v1 + 1.6 };
+        const r = localizar(caixa);
+        const esc = r.s;
+        const MAX = 5;
+        const bar = document.createElement("div");
+        bar.className = "impeto";
+        Object.assign(bar.style, { left: r.left + "px", top: r.top + "px", width: r.width + "px", height: r.height + "px" });
+        const lado = (segs[0].u0 - caixa.u0) * esc;
+        const segW = (segs[0].u1 - segs[0].u0) * esc, gap = (segs[1].u0 - segs[0].u1) * esc;
+        let html = "";
+        for (let i = 0; i < MAX; i++) {
+          html += '<button type="button" class="impeto-seg" aria-label="Ímpeto ' + (i + 1) + '" style="left:' +
+            (lado + i * (segW + gap)) + 'px;width:' + segW + 'px"></button>';
+        }
+        const resto = lado + MAX * (segW + gap);
+        const bw = (r.width - resto - lado - gap) / 2;
+        html += '<button type="button" class="impeto-btn" data-d="-1" aria-label="Diminuir ímpeto" style="left:' + resto + 'px;width:' + bw + 'px">\u2212</button>';
+        html += '<button type="button" class="impeto-btn" data-d="1" aria-label="Aumentar ímpeto" style="left:' + (resto + bw + gap) + 'px;width:' + bw + 'px">+</button>';
+        bar.innerHTML = html;
+        bar.style.setProperty("--seg-raio", Math.max(2, (segs[0].v1 - segs[0].v0) * esc * 0.35) + "px");
+        const pinta = () => {
+          const v = (extras[p.id] || {}).impeto ?? 0;
+          bar.querySelectorAll(".impeto-seg").forEach((el, i) => el.classList.toggle("cheio", i < v));
+        };
+        const define = (novo) => {
+          const e = extras[p.id] || (extras[p.id] = {});
+          novo = Math.max(0, Math.min(MAX, novo));
+          if (novo === (e.impeto ?? 0)) return;
+          e.impeto = novo;
+          pinta();
+          salvarFicha(p.id, {});
+        };
+        bar.querySelectorAll(".impeto-btn").forEach((b) => b.addEventListener("click", () => define(((extras[p.id] || {}).impeto ?? 0) + +b.dataset.d)));
+        // clicar num segmento preenche até ele (clicar no último preenchido esvazia ele)
+        bar.querySelectorAll(".impeto-seg").forEach((b, i) => b.addEventListener("click", () => {
+          const v = (extras[p.id] || {}).impeto ?? 0;
+          define(v === i + 1 ? i : i + 1);
+        }));
+        pinta();
+        camada.append(bar);
       }
     }
   }

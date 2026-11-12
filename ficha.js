@@ -322,10 +322,21 @@
       // decorativo que o contém, para acompanhar exatamente a posição do desenho.
       const localizar = (c) => {
         const cx = (c.u0 + c.u1) / 2, cy = (c.v0 + c.v1) / 2;
-        const d = decos.find((e) => !e.fino && e.u0 <= cx && cx <= e.u1 && e.v0 <= cy && cy <= e.v1);
-        const left = d ? d.left + (c.u0 - d.u0) * s : X(c.u0);
-        return { left, top: Y(c.v0), width: (c.u1 - c.u0) * s, height: (c.v1 - c.v0) * s, s,
-                 deco: d ? { u0: d.u0, v0: d.v0, u1: d.u1, v1: d.v1 } : null };
+        const dentro = (e) => e.u0 <= cx && cx <= e.u1 && e.v0 <= cy && cy <= e.v1;
+        // procura o elemento decorativo (solto, em grupo ou dentro da coluna em fluxo) que contém o ponto
+        const cands = [
+          ...decos.filter((e) => !e.fino).map((e) => ({ e, el: e.el })),
+          ...itensFluxo.filter((it) => it.tipo === "deco").map((it) => ({ e: it.e, el: it.el })),
+        ];
+        const achado = cands.find((k) => dentro(k.e));
+        if (achado) {
+          const base = camada.getBoundingClientRect(), r = achado.el.getBoundingClientRect();
+          const esc = r.width / (achado.e.u1 - achado.e.u0);
+          return { left: r.left - base.left + (c.u0 - achado.e.u0) * esc, top: r.top - base.top + (c.v0 - achado.e.v0) * esc,
+                   width: (c.u1 - c.u0) * esc, height: (c.v1 - c.v0) * esc, s: esc,
+                   deco: { u0: achado.e.u0, v0: achado.e.v0, u1: achado.e.u1, v1: achado.e.v1 } };
+        }
+        return { left: X(c.u0), top: Y(c.v0), width: (c.u1 - c.u0) * s, height: (c.v1 - c.v0) * s, s, deco: null };
       };
       if (opcoes && opcoes.depois) opcoes.depois({ X, Y, s, kx, arte, localizar, camada });
     }

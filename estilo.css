@@ -354,3 +354,24 @@ svg.dado-p text { fill: #161a19; font-family: var(--fonte-texto); font-weight: 7
   100% { opacity: 0; transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, 0px))) scale(1.8); }
 }
 @media (prefers-reduced-motion: reduce) { .fumaca span { animation-duration: 1.4s; } .fumaca { animation-duration: 1.6s; } }
+
+/* barra de ímpeto interativa: mesmo desenho da ficha (segmentos arredondados) */
+.impeto {
+  position: absolute; z-index: 3; border-radius: calc(var(--seg-raio) + 2px);
+  background: #1f2321; box-shadow: inset 0 0 0 1px rgba(235, 231, 222, .28), 0 0 0 2px rgba(12, 16, 15, .85);
+}
+.impeto-seg, .impeto-btn {
+  position: absolute; top: 1.6px; bottom: 1.6px; padding: 0; border: 0; cursor: pointer;
+  border-radius: var(--seg-raio);
+}
+.impeto-seg { background: #6b6a62; transition: background .15s; }
+.impeto-seg.cheio { background: #e1e0da; }
+.impeto-seg:hover { box-shadow: 0 0 0 1px rgba(255, 255, 255, .7); }
+.impeto-btn {
+  /* mais altos que a barra, para ficarem fáceis de clicar */
+  top: -60%; bottom: -60%; min-width: 14px;
+  background: var(--giz); color: #121615; font-family: var(--fonte-texto); font-weight: 800;
+  font-size: calc(var(--seg-raio) * 4.4); line-height: 1; display: grid; place-items: center;
+  box-shadow: 0 0 0 2px rgba(12, 16, 15, .9);
+}
+.impeto-btn:hover { background: #fff; }

@@ -82,6 +82,16 @@ def extrair_marcos(page):
             continue
         v = min(vals, key=lambda s: s["bbox"][0])
         marcos[rotulo.lower()] = dict(rotulo=caixa(l["bbox"]), valor=caixa(v["bbox"]), max=int(v["text"].strip()))
+    # barra de ímpeto (executores): segmentos arredondados à direita do título "ÍMPETO"
+    tit = [s for s in sp if s["font"].startswith("Wak-Bold") and s["text"].strip().upper() in ("ÍMPETO", "ÍMPETO")]
+    if tit:
+        t = tit[0]
+        y0, y1, x1 = t["bbox"][1] - 6, t["bbox"][3] + 6, t["bbox"][2]
+        segs = sorted((dr["rect"] for dr in page.get_drawings()
+                       if dr.get("fill") and dr["rect"].y0 >= y0 and dr["rect"].y1 <= y1 and dr["rect"].x0 >= x1 - 2
+                       and 12 < dr["rect"].width < 24 and 5 < dr["rect"].height < 12), key=lambda r: r.x0)
+        if segs:
+            marcos["impeto"] = dict(titulo=caixa(t["bbox"]), segmentos=[caixa(tuple(r)) for r in segs])
     return marcos
 
 def spans_de_corpo(l, tipo):
