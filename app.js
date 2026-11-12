@@ -325,14 +325,14 @@
         camada.append(c);
       }
 
-      // barra de ímpeto: 5 espaços no mesmo desenho; − e + no lugar dos 2 segmentos escuros
+      // barra de ímpeto: todos os espaços do desenho (7); − e + logo depois da barra
       const mi = marcos.impeto;
-      if (mi && mi.segmentos.length >= 5) {
+      if (mi && mi.segmentos.length) {
         const segs = mi.segmentos, ult = segs[segs.length - 1];
         const caixa = { u0: segs[0].u0 - 1.6, v0: segs[0].v0 - 1.6, u1: ult.u1 + 1.6, v1: segs[0].v1 + 1.6 };
         const r = localizar(caixa);
         const esc = r.s;
-        const MAX = 5;
+        const MAX = segs.length;
         const bar = document.createElement("div");
         bar.className = "impeto";
         Object.assign(bar.style, { left: r.left + "px", top: r.top + "px", width: r.width + "px", height: r.height + "px" });
@@ -343,10 +343,10 @@
           html += '<button type="button" class="impeto-seg" aria-label="Ímpeto ' + (i + 1) + '" style="left:' +
             (lado + i * (segW + gap)) + 'px;width:' + segW + 'px"></button>';
         }
-        const resto = lado + MAX * (segW + gap);
-        const bw = (r.width - resto - lado - gap) / 2;
-        html += '<button type="button" class="impeto-btn" data-d="-1" aria-label="Diminuir ímpeto" style="left:' + resto + 'px;width:' + bw + 'px">\u2212</button>';
-        html += '<button type="button" class="impeto-btn" data-d="1" aria-label="Aumentar ímpeto" style="left:' + (resto + bw + gap) + 'px;width:' + bw + 'px">+</button>';
+        // botões fora da barra, à direita (cada um com a largura de um segmento)
+        const fora = r.width + gap * 2.5;
+        html += '<button type="button" class="impeto-btn" data-d="-1" aria-label="Diminuir ímpeto" style="left:' + fora + 'px;width:' + segW + 'px">\u2212</button>';
+        html += '<button type="button" class="impeto-btn" data-d="1" aria-label="Aumentar ímpeto" style="left:' + (fora + segW + gap * 1.5) + 'px;width:' + segW + 'px">+</button>';
         bar.innerHTML = html;
         bar.style.setProperty("--seg-raio", Math.max(2, (segs[0].v1 - segs[0].v0) * esc * 0.35) + "px");
         const pinta = () => {
