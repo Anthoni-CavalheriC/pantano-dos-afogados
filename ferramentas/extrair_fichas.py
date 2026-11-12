@@ -94,6 +94,26 @@ def extrair_marcos(page):
             marcos["impeto"] = dict(titulo=caixa(t["bbox"]), segmentos=[caixa(tuple(r)) for r in segs])
     return marcos
 
+def extrair_relacoes(page):
+    """relações da história: nome, pontos iniciais (círculos cheios) e posição dos 3 círculos."""
+    sp = [s for b in page.get_text("dict")["blocks"] for l in b.get("lines", []) for s in l["spans"] if s["text"].strip()]
+    circ = [s for s in sp if s["font"].startswith("Wingdings") and set(s["text"].strip()) <= {"", ""}]
+    rel = []
+    for c in sorted(circ, key=lambda s: s["bbox"][1]):
+        cy = (c["bbox"][1] + c["bbox"][3]) / 2
+        nomes = [s for s in sp if s["font"].startswith("Wak-Bold") and s["bbox"][2] <= c["bbox"][0] + 2
+                 and abs((s["bbox"][1] + s["bbox"][3]) / 2 - cy) < 7]
+        if not nomes:
+            continue
+        nome = max(nomes, key=lambda s: s["bbox"][2])["text"].strip()
+        txt = c["text"].strip()
+        x0, y0, x1, y1 = c["bbox"]
+        # largura real dos 3 círculos (o span pode trazer um espaço no fim)
+        x1 = x0 + (x1 - x0) * len(c["text"].rstrip()) / len(c["text"])
+        rel.append(dict(nome=nome, valor=txt.count(""),
+                        circulos=dict(u0=round(x0 + 50, 1), v0=round(y0, 1), u1=round(x1 + 50, 1), v1=round(y1, 1))))
+    return rel
+
 def spans_de_corpo(l, tipo):
     """spans de texto corrido de uma linha. Dados (Polymath) contam quando estão numa
     linha que tem texto em Barlow (ícone de dado no meio da frase), qualquer que seja a cor."""
@@ -240,7 +260,7 @@ for i, pid in enumerate(IDS):
         page = doc[n]
         blocos = extrair_textos(page, tipo)
         pericias = extrair_pericias(page) if tipo == "ficha" else None
-        marcos = extrair_marcos(page) if tipo == "ficha" else None
+        marcos = extrair_marcos(page) if tipo == "ficha" else {"relacoes": extrair_relacoes(page)}
 
         # arte do personagem (só na ficha)
         arte = None

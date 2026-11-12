@@ -375,3 +375,16 @@ svg.dado-p text { fill: #161a19; font-family: var(--fonte-texto); font-weight: 7
   box-shadow: 0 0 0 2px rgba(12, 16, 15, .9);
 }
 .impeto-btn:hover { background: #fff; }
+
+/* pontos de relação (história, ficha desperta): ○ vazio, ⦿ cheio — como na ficha */
+.relacao {
+  position: absolute; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 2px;
+  /* mesmo fundo da página, alinhado, para cobrir os círculos originais sem deixar marca */
+  background: var(--ardosia) url("img/fundo.jpg") center / cover no-repeat fixed;
+}
+.relacao-ponto {
+  flex: none; height: 82%; aspect-ratio: 1; padding: 0; cursor: pointer; border-radius: 50%;
+  background: transparent; border: max(1.5px, .12em) solid #fff;
+}
+.relacao-ponto.cheio { background: radial-gradient(circle, #fff 0 34%, transparent 38%); }
+.relacao-ponto:hover { box-shadow: 0 0 0 2px rgba(255, 255, 255, .35); }
