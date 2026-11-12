@@ -388,3 +388,94 @@ svg.dado-p text { fill: #161a19; font-family: var(--fonte-texto); font-weight: 7
 }
 .relacao-ponto.cheio { background: radial-gradient(circle, #fff 0 34%, transparent 38%); }
 .relacao-ponto:hover { box-shadow: 0 0 0 2px rgba(255, 255, 255, .35); }
+
+/* ---------- Modo mestre: monstros ---------- */
+.botao-monstros { margin-top: 8px; }
+
+.tela-monstros { display: flex; flex-direction: column; padding: 44px 46px 40px; gap: 16px; }
+.tela-monstros .barra h1 { font-size: clamp(26px, 3.4vw, 42px); }
+.lista-monstros {
+  flex: 1; min-height: 0; overflow-y: auto; padding: 4px 6px 10px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); grid-auto-rows: minmax(300px, 1fr); gap: 14px;
+}
+.monstro-card {
+  position: relative; display: flex; flex-direction: column; min-height: 0;
+  background: rgba(12, 16, 15, .78); border: 2px solid rgba(235, 231, 222, .55);
+}
+.monstro-card::before { content: ""; position: absolute; inset: 4px; pointer-events: none; border: 1px solid rgba(235, 231, 222, .2); }
+.monstro-card.chefe { grid-column: span 2; border-color: var(--sangue-claro); }
+.monstro-abrir {
+  position: relative; flex: 1; min-height: 0; padding: 0; border: 0; cursor: pointer; overflow: hidden;
+  background: radial-gradient(ellipse at 50% 35%, rgba(60, 84, 76, .55), rgba(12, 16, 15, .9) 75%);
+}
+.monstro-abrir img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: 50% 30%; transition: transform .4s, filter .3s; }
+.monstro-abrir:hover img { transform: scale(1.04); }
+.monstro-nome {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 30px 12px 8px; text-align: left;
+  font-family: var(--fonte-titulo); font-size: clamp(20px, 1.8vw, 28px); color: var(--giz);
+  background: linear-gradient(to top, rgba(8, 11, 10, .95) 40%, transparent);
+}
+.monstro-selo {
+  display: none; position: absolute; top: 10px; left: 10px; right: 10px; padding: 4px; text-align: center;
+  background: rgba(12, 16, 15, .9); border: 1px solid var(--sangue); color: var(--sangue-claro);
+  font-family: var(--fonte-rotulo); font-weight: 800; letter-spacing: .08em;
+}
+.monstro-card.derrotado .monstro-abrir img { filter: grayscale(1) brightness(.45); }
+.monstro-card.derrotado .monstro-selo { display: block; }
+.monstro-controles { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+.monstro-remover {
+  margin: 0 12px 12px; padding: 5px; cursor: pointer; background: transparent; color: var(--giz-suave);
+  border: 1px solid rgba(235, 231, 222, .3); font-family: var(--fonte-rotulo); font-weight: 700; font-size: 13px; letter-spacing: .05em;
+}
+.monstro-remover:hover { color: var(--giz); border-color: rgba(235, 231, 222, .6); }
+.monstro-remover.confirmar { color: #fff; background: var(--sangue); border-color: var(--sangue); }
+.monstro-novo {
+  cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  background: rgba(12, 16, 15, .45); color: var(--giz-suave); border: 2px dashed rgba(235, 231, 222, .4);
+  font-family: var(--fonte-rotulo); font-weight: 800; font-size: 17px; letter-spacing: .05em;
+}
+.monstro-novo span { font-family: var(--fonte-titulo); font-size: 54px; line-height: 1; }
+.monstro-novo:hover { color: var(--giz); border-color: var(--giz); }
+
+/* contador de PV do monstro (lista e ficha) */
+.pv-monstro { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: 2px 10px; font-family: var(--fonte-rotulo); }
+.pv-rotulo { font-weight: 800; letter-spacing: .06em; color: var(--giz-suave); }
+.pv-valor { justify-self: end; font-weight: 700; color: var(--giz-suave); }
+.pv-valor b { font-size: 1.6em; color: #fff; }
+.pv-barra { grid-column: 1 / -1; height: 6px; background: rgba(235, 231, 222, .15); overflow: hidden; }
+.pv-barra i { display: block; height: 100%; background: var(--sangue-claro); transition: width .25s; }
+.pv-botoes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.pv-botoes button {
+  cursor: pointer; padding: 6px 0; border: 0; border-radius: 2px; background: var(--giz); color: #121615;
+  font-family: var(--fonte-texto); font-weight: 800; font-size: 15px;
+}
+.pv-botoes button:hover { background: #fff; }
+.pv-botoes button[data-d^="-"] { background: #c9b9b2; }
+
+/* ficha do monstro: texto à esquerda, arte à direita (como as fichas dos personagens) */
+.ficha-monstro {
+  position: absolute; inset: 56px 56px 44px; display: grid; grid-template-columns: minmax(0, 2.1fr) minmax(0, 1fr); gap: 22px;
+}
+.fm-texto { min-height: 0; overflow: hidden; color: #e9e6df; font-family: var(--fonte-texto); line-height: 1.32; }
+.fm-texto p { margin: 0 0 .45em; }
+.fm-texto b { font-weight: 600; color: #fff; }
+.fm-texto .item { display: block; padding-left: 1.1em; border-left: 2px solid rgba(235, 231, 222, .25); }
+.fm-texto .rotulo { font-size: 1.1em; margin: .7em 0 .4em; }
+.fm-cabeca { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; margin-bottom: .4em; border-bottom: 2px solid rgba(235, 231, 222, .7); padding-bottom: .4em; }
+.fm-nome { font-family: var(--fonte-titulo); font-size: 3em; line-height: 1; margin: 0; }
+.fm-pv { width: min(17em, 50%); font-size: .95em; }
+.fm-pv .pv-botoes button { font-size: 1em; }
+.fm-atributos { display: flex; flex-wrap: wrap; gap: .4em 1.2em; font-family: var(--fonte-rotulo); letter-spacing: .04em; margin-bottom: .2em !important; }
+.fm-atributos b { font-weight: 800; }
+.fm-pericias { font-family: var(--fonte-rotulo); font-weight: 700; letter-spacing: .03em; color: var(--giz-suave); }
+.fm-lema { font-style: italic; color: var(--giz-suave); }
+.fm-arte { width: 100%; height: 100%; min-height: 0; object-fit: contain; object-position: 50% 50%;
+  -webkit-mask-image: linear-gradient(to bottom, #000 85%, transparent); mask-image: linear-gradient(to bottom, #000 85%, transparent); }
+.ficha-monstro.derrotado .fm-arte { filter: grayscale(1) brightness(.5); }
+.ficha-monstro.derrotado .fm-nome::after { content: " — derrotado"; font-size: .45em; color: var(--sangue-claro); }
+
+@media (max-width: 760px) {
+  .tela-monstros { padding: 26px 22px 24px; }
+  .monstro-card.chefe { grid-column: span 1; }
+  .ficha-monstro { inset: 48px 22px 24px; grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) 30%; }
+}

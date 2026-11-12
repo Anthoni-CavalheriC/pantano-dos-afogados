@@ -346,4 +346,5 @@
   }
 
   window.montarPaginaFicha = montar;
+  window.svgDado = svgDado;
 })();

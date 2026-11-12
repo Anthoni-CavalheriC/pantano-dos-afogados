@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=Alegreya+Sans+SC:wght@500;700;800&family=Barlow:ital,wght@0,400;0,600;0,700;0,900;1,400;1,700&display=swap" rel="stylesheet">
 <link rel="preload" href="img/fundo.jpg" as="image">
-<link rel="stylesheet" href="estilo.css?v=7">
+<link rel="stylesheet" href="estilo.css?v=8">
 </head>
 <body>
 
@@ -54,6 +54,7 @@
       <p class="mestre-selo">Modo mestre</p>
       <p id="mestre-contagem" class="mestre-contagem"></p>
       <p id="mestre-faltam" class="mestre-faltam"></p>
+      <button id="botao-monstros" class="ctl botao-monstros" type="button">Monstros →</button>
     </div>
   </header>
   <p id="aviso" class="aviso-flutuante" role="status" hidden></p>
@@ -79,11 +80,35 @@
   </div>
 </section>
 
+<!-- Modo mestre: monstros (lista com PV) -->
+<section id="tela-monstros" class="tela tela-monstros com-moldura" hidden>
+  <header class="barra">
+    <div class="barra-titulo">
+      <p class="sobre">Modo mestre</p>
+      <h1>Monstros</h1>
+    </div>
+    <button id="botao-voltar-personagens" class="ctl" type="button">← Personagens</button>
+  </header>
+  <div id="lista-monstros" class="lista-monstros"></div>
+</section>
+
+<!-- Modo mestre: ficha de um monstro -->
+<section id="tela-monstro" class="tela tela-monstro com-moldura" hidden>
+  <button id="botao-voltar-monstros" class="ctl voltar" type="button">← Monstros</button>
+  <div class="abas" role="tablist">
+    <button id="aba-m-ficha" class="ctl aba" role="tab" type="button">Ficha</button>
+    <button id="aba-m-descricao" class="ctl aba" role="tab" type="button">Descrição</button>
+  </div>
+  <div id="ficha-monstro" class="ficha-monstro"></div>
+</section>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="config.js?v=7"></script>
-<script src="personagens.js?v=7"></script>
-<script src="fichas.js?v=7"></script>
-<script src="ficha.js?v=7"></script>
-<script src="app.js?v=7"></script>
+<script src="config.js?v=8"></script>
+<script src="personagens.js?v=8"></script>
+<script src="fichas.js?v=8"></script>
+<script src="ficha.js?v=8"></script>
+<script src="monstros.js?v=8"></script>
+<script src="monstros-tela.js?v=8"></script>
+<script src="app.js?v=8"></script>
 </body>
 </html>

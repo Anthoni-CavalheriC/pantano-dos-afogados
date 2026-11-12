@@ -78,6 +78,8 @@
 
   function mostrar(qual) {
     tela = qual;
+    $("tela-monstros").hidden = true;
+    $("tela-monstro").hidden = true;
     $("tela-nome").hidden = qual !== "nome";
     $("tela-escolha").hidden = qual !== "escolha";
     $("tela-ficha").hidden = qual !== "ficha";
@@ -85,6 +87,7 @@
 
   // Decide a tela certa: quem já escolheu fica preso na própria ficha.
   function atualizar() {
+    if (tela === "monstros") return; // mestre está na tela de monstros
     if (mestre) {
       if (tela === "ficha" && abertoId) { mostrar("ficha"); return desenharFicha(); }
       mostrar("escolha");
@@ -552,6 +555,14 @@
   }
   async function entrarComoMestre() {
     mestre = true;
+    const senhaMestre = new URLSearchParams(location.search).get("mestre").trim();
+    $("botao-monstros").addEventListener("click", () => {
+      tela = "monstros";
+      window.abrirMonstros({
+        banco, senha: senhaMestre,
+        aoVoltar: () => { tela = "escolha"; mostrar("escolha"); desenharFaixa(); },
+      });
+    });
     document.body.classList.add("modo-mestre");
     $("barra-ola").hidden = true;
     $("resumo-mestre").hidden = false;
