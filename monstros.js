@@ -4,7 +4,7 @@ window.MONSTROS = {
   afogado: {
     nome: "Afogado",
     pv: 10,
-    arte: "img/afogado-arte.webp",
+    arte: ["img/afogado-1.webp", "img/afogado-2.webp"], // cada afogado sorteia uma
     multiplos: true, // dá para adicionar vários
     atributos: [["Físico", 8], ["Mente", 4], ["Emoção", 4]],
     pericias: "Atletismo [d8], Luta [d6]",

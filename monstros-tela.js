@@ -13,6 +13,11 @@
 
   const dados = (t) => t.replace(/\[d(\d+)\]/g, (_, n) => window.svgDado(n, "dado"));
   const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  // arte do monstro: se houver várias, usa a que o banco sorteou ao criar (coluna "arte")
+  const arteDe = (m) => {
+    const a = M[m.tipo].arte;
+    return Array.isArray(a) ? a[(m.arte || 0) % a.length] : a;
+  };
   const ordenar = (a, b) => (a.tipo === b.tipo ? a.id - b.id : a.tipo === "aughisk" ? -1 : 1);
 
   function mostrar(qual) {
@@ -22,7 +27,7 @@
   }
 
   async function carregar() {
-    const { data, error } = await ctx.banco.from("monstros").select("id, tipo, nome, pv");
+    const { data, error } = await ctx.banco.from("monstros").select("id, tipo, nome, pv, arte");
     if (error) { console.error(error); return; }
     lista = data.sort(ordenar);
   }
@@ -78,7 +83,7 @@
       card.className = "monstro-card" + (m.tipo === "aughisk" ? " chefe" : "") + (m.pv === 0 ? " derrotado" : "");
       card.innerHTML = `
         <button type="button" class="monstro-abrir" aria-label="Abrir ficha de ${esc(m.nome)}">
-          <img src="${d.arte}" alt="">
+          <img src="${arteDe(m)}" alt="">
           <span class="monstro-nome">${esc(m.nome)}</span>
           <span class="monstro-selo">Derrotado</span>
         </button>
@@ -146,7 +151,7 @@
         <h3 class="rotulo"><span>Estratégia</span></h3>
         <p>${esc(d.estrategia)}</p>`}
       </div>
-      <img class="fm-arte" src="${d.arte}" alt="">`;
+      <img class="fm-arte" src="${arteDe(m)}" alt="">`;
     $("aba-m-ficha").setAttribute("aria-selected", String(aba === "ficha"));
     $("aba-m-descricao").setAttribute("aria-selected", String(aba === "descricao"));
     ligarPV(raiz.querySelector(".fm-pv"), m, () => {
