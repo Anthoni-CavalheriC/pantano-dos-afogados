@@ -14,13 +14,27 @@
   let pagina = "ficha";    // "ficha" | "historia"
   let confirmando = false; // primeiro clique em "Jogar" pede confirmação
   let mestre = false;      // modo mestre: vê tudo, nunca fica preso, não escolhe
+  let extras = {};         // { personagem_id: { segredo, pv, pd } } — ficha interativa
+  let interativo = false;  // ficha do jogador já "despertou" nesta visita
+  let segredoAchado = false; // botão secreto já apareceu nesta visita
 
   // ---------- Banco ----------
   async function carregarEscolhas() {
-    const { data, error } = await banco.from("escolhas").select("personagem_id, jogador");
+    const { data, error } = await banco.from("escolhas").select("personagem_id, jogador, segredo, pv, pd");
     if (error) { console.error(error); return false; }
     escolhas = {};
-    for (const linha of data) escolhas[linha.personagem_id] = linha.jogador;
+    const novos = {};
+    for (const linha of data) {
+      escolhas[linha.personagem_id] = linha.jogador;
+      novos[linha.personagem_id] = { segredo: !!linha.segredo, pv: linha.pv, pd: linha.pd };
+      // enquanto o jogador está mexendo nos contadores, vale o valor local
+      if (salvando && extras[linha.personagem_id]) {
+        novos[linha.personagem_id].pv = extras[linha.personagem_id].pv;
+        novos[linha.personagem_id].pd = extras[linha.personagem_id].pd;
+      }
+      if (extras[linha.personagem_id] && extras[linha.personagem_id].segredo) novos[linha.personagem_id].segredo = true;
+    }
+    extras = novos;
     return true;
   }
 
@@ -34,6 +48,22 @@
     }
     console.error(error);
     return "Não foi possível confirmar agora. Tente de novo.";
+  }
+
+  // salva segredo/PV/PD do próprio jogador (função do banco que só mexe na linha dele)
+  let salvando = null;
+  function salvarFicha(id, campos, imediato) {
+    clearTimeout(salvando);
+    const envia = async () => {
+      const e = extras[id] || {};
+      const { error } = await banco.rpc("atualizar_ficha", {
+        p_personagem: id, p_jogador: nomeJogador,
+        p_segredo: campos.segredo ?? null, p_pv: e.pv ?? null, p_pd: e.pd ?? null,
+      });
+      if (error) console.error(error);
+      salvando = null;
+    };
+    if (imediato) envia(); else salvando = setTimeout(envia, 500);
   }
 
   // ---------- Ajudantes ----------
@@ -201,7 +231,9 @@
     const arteFicha = window.FICHAS[p.id].ficha.arte;
     montada = window.montarPaginaFicha($("palco"), dados, {
       // botão Jogar no peito do personagem (na ficha); na história, no mesmo canto
-      depois: ({ arte }) => {
+      depois: (info) => {
+        camadaSecreta(p, info);
+        const { arte } = info;
         const acao = $("acao");
         if (arte) {
           const l = +arte.dataset.l, w = +arte.dataset.w;
@@ -212,6 +244,113 @@
       },
     });
   }
+  // ---------- Segredo: nome por 5 s -> botão -> fumaça -> ficha interativa ----------
+  function camadaSecreta(p, info) {
+    const { camada, localizar, s } = info;
+    camada.querySelectorAll(".zona-segredo, .botao-segredo, .contador").forEach((e) => e.remove());
+    const marcos = window.FICHAS[p.id].ficha.marcos;
+    if (mestre || pagina !== "ficha" || meuId() !== p.id || !marcos) return;
+    const ext = extras[p.id] || {};
+
+    // zona invisível sobre o nome principal (só enquanto o segredo não foi descoberto)
+    if (!ext.segredo && !interativo && marcos.nome) {
+      const r = localizar(marcos.nome);
+      const zona = document.createElement("div");
+      zona.className = "zona-segredo";
+      Object.assign(zona.style, { left: r.left + "px", top: r.top + "px", width: r.width + "px", height: r.height + "px" });
+      let timer = 0;
+      const comeca = () => { clearTimeout(timer); timer = setTimeout(() => { segredoAchado = true; montada.layout(); }, 5000); };
+      const para = () => clearTimeout(timer);
+      zona.addEventListener("pointerenter", (e) => { if (e.pointerType === "mouse") comeca(); });
+      zona.addEventListener("pointerleave", para);
+      zona.addEventListener("pointerdown", (e) => { if (e.pointerType !== "mouse") comeca(); });
+      zona.addEventListener("pointerup", (e) => { if (e.pointerType !== "mouse") para(); });
+      zona.addEventListener("pointercancel", para);
+      zona.addEventListener("contextmenu", (e) => e.preventDefault());
+      camada.append(zona);
+
+      if (segredoAchado) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "botao-segredo";
+        b.textContent = "Despertar";
+        Object.assign(b.style, { left: r.left + r.width * 0.15 + "px", top: r.top + r.height + 6 + "px" });
+        b.addEventListener("click", () => {
+          extras[p.id] = { ...(extras[p.id] || {}), segredo: true };
+          salvarFicha(p.id, { segredo: true }, true);
+          despertar();
+        });
+        camada.append(b);
+      }
+    }
+
+    // ficha interativa: contadores de PV e PD sobre os blocos originais
+    if (interativo) {
+      for (const chave of ["pv", "pd"]) {
+        const m = marcos[chave];
+        if (!m) continue;
+        const outro = marcos[chave === "pv" ? "pd" : "pv"];
+        const loc0 = localizar(m.rotulo);
+        let u1 = loc0.deco ? loc0.deco.u1 : m.valor.u1 + 120;
+        if (outro && Math.abs(outro.rotulo.v0 - m.rotulo.v0) < 10 && outro.rotulo.u0 > m.rotulo.u0) u1 = Math.min(u1, outro.rotulo.u0 - 6);
+        const caixa = { u0: m.rotulo.u0 - 5, v0: m.valor.v0 - 8, u1, v1: m.valor.v1 + 8 };
+        const r = localizar({ ...caixa, u1: m.rotulo.u1 });
+        const largura = (caixa.u1 - caixa.u0) * s, altura = (caixa.v1 - caixa.v0) * s;
+        const atual = ext[chave] ?? m.max;
+
+        const c = document.createElement("div");
+        c.className = "contador";
+        Object.assign(c.style, { left: r.left + "px", top: r.top + "px", width: largura + "px", height: altura + "px",
+          // cabe na largura do bloco (rótulo, −, valor, + ocupam ~10,4 em)
+          fontSize: Math.min(altura * 0.42, largura / 10.4) + "px" });
+        const pct = (v) => Math.round((v / m.max) * 100) + "%";
+        c.innerHTML = '<span class="contador-rotulo">' + chave.toUpperCase() + '</span>' +
+          '<button type="button" class="contador-menos" aria-label="Diminuir ' + chave.toUpperCase() + '">−</button>' +
+          '<span class="contador-valor"><b>' + atual + '</b>/' + m.max + '</span>' +
+          '<button type="button" class="contador-mais" aria-label="Aumentar ' + chave.toUpperCase() + '">+</button>' +
+          '<span class="contador-barra"><i style="width:' + pct(atual) + '"></i></span>';
+        const muda = (delta) => {
+          const e = extras[p.id] || (extras[p.id] = {});
+          const antes = e[chave] ?? m.max;
+          const novo = Math.max(0, Math.min(m.max, antes + delta));
+          if (novo === antes) return;
+          e[chave] = novo;
+          c.querySelector(".contador-valor b").textContent = novo;
+          c.querySelector(".contador-barra i").style.width = pct(novo);
+          salvarFicha(p.id, {});
+        };
+        c.querySelector(".contador-menos").addEventListener("click", () => muda(-1));
+        c.querySelector(".contador-mais").addEventListener("click", () => muda(+1));
+        camada.append(c);
+      }
+    }
+  }
+
+  // fumaça cobre a tela; no meio dela a ficha vira interativa
+  function despertar() {
+    const nevoa = document.createElement("div");
+    nevoa.className = "fumaca";
+    for (let i = 0; i < 22; i++) {
+      const f = document.createElement("span");
+      const tam = 30 + Math.random() * 45;
+      f.style.left = Math.random() * 100 + "%";
+      f.style.top = Math.random() * 100 + "%";
+      f.style.width = tam + "vmax";
+      f.style.height = tam + "vmax";
+      f.style.animationDelay = Math.random() * 0.35 + "s";
+      f.style.setProperty("--dx", (Math.random() - 0.5) * 30 + "vmax");
+      f.style.setProperty("--dy", (Math.random() - 0.5) * 20 - 10 + "vmax");
+      nevoa.append(f);
+    }
+    document.body.append(nevoa);
+    setTimeout(() => {
+      interativo = true; segredoAchado = false;
+      if (montada) montada.layout();
+      desenharFicha();
+    }, 1300);
+    setTimeout(() => nevoa.remove(), 3400);
+  }
+
   let quadro = 0;
   window.addEventListener("resize", () => {
     cancelAnimationFrame(quadro);
@@ -259,9 +398,19 @@
     cancelar.hidden = !confirmando;
 
     if (meu === p.id) {
-      status.textContent = "Seu personagem";
-      status.className = "status meu";
-      jogar.hidden = true;
+      const ext = extras[p.id] || {};
+      if (ext.segredo && !interativo) {
+        // já descobriu o segredo: "Seu personagem" vira o botão Jogar
+        status.textContent = "";
+        status.className = "status";
+        jogar.hidden = false;
+        jogar.disabled = false;
+        jogar.textContent = "Jogar";
+      } else {
+        status.textContent = "Seu personagem";
+        status.className = "status meu";
+        jogar.hidden = true;
+      }
     } else if (dono) {
       status.textContent = "Escolhido por " + dono;
       status.className = "status ocupado";
@@ -278,7 +427,11 @@
   $("botao-cancelar").addEventListener("click", () => { confirmando = false; desenharFicha(); });
 
   $("botao-jogar").addEventListener("click", async () => {
-    if (mestre || !abertoId || meuId()) return;
+    if (mestre || !abertoId) return;
+    if (meuId()) {
+      if (meuId() === abertoId && (extras[abertoId] || {}).segredo && !interativo) despertar();
+      return;
+    }
     if (!confirmando) { confirmando = true; return desenharFicha(); }
     const jogar = $("botao-jogar");
     jogar.disabled = true;

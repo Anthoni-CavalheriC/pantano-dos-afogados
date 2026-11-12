@@ -318,7 +318,16 @@
         ajusta((g2) => { for (const t of linhas) t.el.style.fontSize = t.size * s * Math.min(g2, g) + "px"; }, () => cabeEm(linhas));
       }
       camada.dataset.ganho = g.toFixed(2);
-      if (opcoes && opcoes.depois) opcoes.depois({ X, Y, s, kx, arte });
+      // Onde um ponto da página (ex.: o nome, o bloco de PV) aparece na tela: usa o elemento
+      // decorativo que o contém, para acompanhar exatamente a posição do desenho.
+      const localizar = (c) => {
+        const cx = (c.u0 + c.u1) / 2, cy = (c.v0 + c.v1) / 2;
+        const d = decos.find((e) => !e.fino && e.u0 <= cx && cx <= e.u1 && e.v0 <= cy && cy <= e.v1);
+        const left = d ? d.left + (c.u0 - d.u0) * s : X(c.u0);
+        return { left, top: Y(c.v0), width: (c.u1 - c.u0) * s, height: (c.v1 - c.v0) * s, s,
+                 deco: d ? { u0: d.u0, v0: d.v0, u1: d.u1, v1: d.v1 } : null };
+      };
+      if (opcoes && opcoes.depois) opcoes.depois({ X, Y, s, kx, arte, localizar, camada });
     }
 
     layout();

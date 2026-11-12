@@ -300,3 +300,57 @@ svg.dado-p text { fill: #161a19; font-family: var(--fonte-texto); font-weight: 7
   .nivel small { font-size: 7px; }
   .nivel b { font-size: 20px; }
 }
+
+/* ---------- Segredo e ficha interativa ---------- */
+/* zona invisível sobre o nome: não muda o cursor nem nada (é segredo) */
+.zona-segredo { position: absolute; z-index: 3; background: transparent; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+
+.botao-segredo {
+  position: absolute; z-index: 4; cursor: pointer;
+  font-family: var(--fonte-titulo); font-size: clamp(15px, 1.4vw, 22px); letter-spacing: .06em;
+  color: var(--giz); background: rgba(12, 16, 15, .92); padding: .35em 1.1em;
+  border: 1px solid rgba(235, 231, 222, .7);
+  box-shadow: 0 0 0 3px rgba(12, 16, 15, .9), 0 0 0 4px rgba(235, 231, 222, .3), 0 0 26px rgba(170, 210, 190, .45);
+  animation: brotar 1.2s ease-out both, pulsar 2.4s ease-in-out 1.2s infinite;
+}
+.botao-segredo:hover { background: rgba(30, 42, 38, .96); }
+@keyframes brotar { from { opacity: 0; filter: blur(6px); transform: translateY(-4px); } to { opacity: 1; filter: none; transform: none; } }
+@keyframes pulsar { 50% { box-shadow: 0 0 0 3px rgba(12, 16, 15, .9), 0 0 0 4px rgba(235, 231, 222, .45), 0 0 40px rgba(170, 210, 190, .7); } }
+
+/* contadores de PV / PD (cobrem o bloco original da ficha) */
+.contador {
+  position: absolute; z-index: 3; display: grid; align-content: center; justify-content: start;
+  grid-template-columns: auto auto auto auto; column-gap: .4em; row-gap: .22em; padding: 0 .55em;
+  background: var(--ardosia) url("img/fundo.jpg") center / cover; border: 1px solid rgba(235, 231, 222, .55);
+  box-shadow: 0 0 0 2px rgba(12, 16, 15, .9), 0 6px 18px rgba(0, 0, 0, .55);
+  font-family: var(--fonte-rotulo); color: var(--giz); align-items: center;
+}
+.contador-rotulo { font-weight: 800; letter-spacing: .04em; font-size: .9em; }
+.contador-valor { font-weight: 700; white-space: nowrap; min-width: 3.4em; text-align: center; color: var(--giz-suave); }
+.contador-valor b { font-weight: 800; font-size: 1.35em; color: #fff; }
+.contador button {
+  cursor: pointer; width: 1.45em; height: 1.45em; padding: 0; line-height: 1;
+  font-family: var(--fonte-texto); font-weight: 700; font-size: 1em;
+  color: #121615; background: var(--giz); border: 0; border-radius: 3px;
+}
+.contador button:hover { background: #fff; }
+.contador button:active { transform: translateY(1px); }
+/* barra fina: quanto resta de PV/PD */
+.contador-barra { grid-column: 1 / -1; height: .26em; background: rgba(235, 231, 222, .16); overflow: hidden; }
+.contador-barra i { display: block; height: 100%; background: #fff; transition: width .25s ease; }
+
+/* fumaça que cobre a tela quando a ficha desperta */
+.fumaca { position: fixed; inset: 0; z-index: 50; pointer-events: none; overflow: hidden; animation: fumaca-fundo 3.4s ease-in-out forwards; }
+.fumaca span {
+  position: absolute; border-radius: 50%; transform: translate(-50%, -50%) scale(.2); opacity: 0;
+  background: radial-gradient(circle, rgba(196, 204, 199, .95) 0%, rgba(150, 160, 155, .75) 35%, rgba(90, 100, 96, 0) 70%);
+  filter: blur(18px); animation: fumaca-nuvem 3s ease-in-out forwards;
+}
+@keyframes fumaca-fundo { 0% { background: rgba(20, 24, 23, 0); } 35%, 55% { background: rgba(120, 128, 124, .9); } 100% { background: rgba(20, 24, 23, 0); } }
+@keyframes fumaca-nuvem {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.2); }
+  35% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+  60% { opacity: .95; transform: translate(-50%, -50%) scale(1.3); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, 0px))) scale(1.8); }
+}
+@media (prefers-reduced-motion: reduce) { .fumaca span { animation-duration: 1.4s; } .fumaca { animation-duration: 1.6s; } }

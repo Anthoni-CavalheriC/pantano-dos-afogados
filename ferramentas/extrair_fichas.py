@@ -61,6 +61,29 @@ def extrair_pericias(page):
                 u0=round(min(s["bbox"][0] for s in sp) + 50, 1), v0=round(min(s["bbox"][1] for s in sp), 1),
                 u1=round(max(s["bbox"][2] for s in sp) + 50, 1), v1=round(max(s["bbox"][3] for s in sp), 1))
 
+def extrair_marcos(page):
+    """posição do nome principal (Carta Marina) e dos blocos de PV e PD, com o valor máximo."""
+    sp = [s for b in page.get_text("dict")["blocks"] for l in b.get("lines", []) for s in l["spans"] if s["text"].strip()]
+    caixa = lambda r: dict(u0=round(r[0] + 50, 1), v0=round(r[1], 1), u1=round(r[2] + 50, 1), v1=round(r[3], 1))
+    marcos = {}
+    nomes = [s for s in sp if s["font"].startswith("CartaMarina")]
+    if nomes:
+        n = max(nomes, key=lambda s: s["size"])
+        marcos["nome"] = caixa(n["bbox"])
+    for rotulo in ("PV", "PD"):
+        ls = [s for s in sp if s["text"].strip() == rotulo and s["font"].startswith("Wak-Bold") and s["size"] > 14]
+        if not ls:
+            continue
+        l = ls[0]
+        cy = (l["bbox"][1] + l["bbox"][3]) / 2
+        vals = [s for s in sp if s["font"].startswith("Wak-Medium") and s["text"].strip().isdigit()
+                and s["bbox"][0] > l["bbox"][0] and abs((s["bbox"][1] + s["bbox"][3]) / 2 - cy) < 10]
+        if not vals:
+            continue
+        v = min(vals, key=lambda s: s["bbox"][0])
+        marcos[rotulo.lower()] = dict(rotulo=caixa(l["bbox"]), valor=caixa(v["bbox"]), max=int(v["text"].strip()))
+    return marcos
+
 def spans_de_corpo(l, tipo):
     """spans de texto corrido de uma linha. Dados (Polymath) contam quando estão numa
     linha que tem texto em Barlow (ícone de dado no meio da frase), qualquer que seja a cor."""
@@ -207,6 +230,7 @@ for i, pid in enumerate(IDS):
         page = doc[n]
         blocos = extrair_textos(page, tipo)
         pericias = extrair_pericias(page) if tipo == "ficha" else None
+        marcos = extrair_marcos(page) if tipo == "ficha" else None
 
         # arte do personagem (só na ficha)
         arte = None
@@ -255,7 +279,7 @@ for i, pid in enumerate(IDS):
         caixas = [c for c in componentes(pequeno, 4) if (c[2] - c[0]) * (c[3] - c[1]) >= 12]
 
         dados[pid][tipo] = dict(deco=f"img/{pid}-{tipo}-deco.webp", elementos=caixas, textos=blocos, arte=arte,
-                                pericias=pericias)
+                                pericias=pericias, marcos=marcos)
         print(pid, tipo, "textos:", len(blocos), "elementos:", len(caixas), "arte:", bool(arte))
         # imagem de conferência: caixas de elementos (verde) e textos (vermelho) sobre a camada
         from PIL import ImageDraw
