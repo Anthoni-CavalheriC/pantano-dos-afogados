@@ -64,9 +64,24 @@
       mostrar("ficha");
       return desenharFicha();
     }
+    if (tela === "ficha" && abertoId && escolhas[abertoId]) {
+      // alguém escolheu este personagem enquanto a ficha estava aberta
+      avisar(porId(abertoId).nome + " acabou de ser escolhido por " + escolhas[abertoId] + ".");
+      abertoId = null; confirmando = false;
+    }
     if (tela === "ficha" && abertoId) { mostrar("ficha"); return desenharFicha(); }
     mostrar("escolha");
     desenharFaixa();
+  }
+
+  // aviso rápido na tela de escolha
+  let avisoTempo = 0;
+  function avisar(texto) {
+    const el = $("aviso");
+    el.textContent = texto;
+    el.hidden = false;
+    clearTimeout(avisoTempo);
+    avisoTempo = setTimeout(() => { el.hidden = true; }, 6000);
   }
 
   // ---------- Tela 1: nome ----------
@@ -154,13 +169,21 @@
         const f = window.FICHAS[p.id].ficha;
         preCarregar(f.deco); if (f.arte) preCarregar(f.arte.src);
       }, { once: true });
-      painel.addEventListener("click", () => abrirFicha(p.id));
+      if (dono && !mestre) {
+        // já escolhido: o jogador não pode abrir a ficha
+        painel.classList.add("bloqueado");
+        painel.setAttribute("aria-disabled", "true");
+        painel.tabIndex = -1;
+      } else {
+        painel.addEventListener("click", () => abrirFicha(p.id));
+      }
       faixa.append(painel);
     }
   }
 
   // ---------- Tela 3: ficha ----------
   function abrirFicha(id) {
+    if (!mestre && escolhas[id]) return;
     abertoId = id; pagina = "ficha"; confirmando = false;
     $("ficha-erro").hidden = true;
     mostrar("ficha");

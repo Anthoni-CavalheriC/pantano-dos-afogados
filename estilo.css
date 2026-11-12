@@ -154,6 +154,19 @@ input:focus { outline: 2px solid var(--giz); outline-offset: 2px; }
 .nivel b { font-family: var(--fonte-titulo); font-weight: 400; font-size: 26px; color: var(--giz); margin-top: 1px; }
 .painel.tomado .nivel { filter: grayscale(1); opacity: .7; }
 
+/* Personagem já escolhido: o jogador não consegue abrir */
+.painel.bloqueado { cursor: not-allowed; }
+@media (hover: hover) {
+  .faixa .painel.bloqueado:hover { border-color: rgba(235, 231, 222, .55); }
+  .painel.bloqueado:hover img { transform: none; }
+}
+.aviso-flutuante {
+  position: absolute; left: 50%; bottom: 58px; transform: translateX(-50%); z-index: 7; margin: 0;
+  padding: 10px 18px; background: rgba(12, 16, 15, .95); border: 1px solid var(--sangue);
+  color: var(--sangue-claro); font-family: var(--fonte-rotulo); font-weight: 800; font-size: 16px; letter-spacing: .03em;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .6);
+}
+
 /* Modo mestre: resumo na barra e selo "Livre" */
 .resumo-mestre { text-align: right; line-height: 1.25; }
 .resumo-mestre p { margin: 0; }
